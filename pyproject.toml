@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simple-fastcgi"
+version = "0.0.1"
+authors = [
+	{ name = "USN484259", email = "USN484259@outlook.com" },
+]
+description = "simple FastCGI sync/async handler in pure python"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.8"
+keywords = ["fastcgi", "fcgi", "cgi", "http"]
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3.8",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"Programming Language :: Python :: 3.13",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/USN484259/simple-fastcgi"
+
+
+[tool.setuptools]
+packages = [
+	"fastcgi",
+]
