@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "simple-fastcgi"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
 	{ name = "USN484259", email = "USN484259@outlook.com" },
 ]
@@ -13,7 +13,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.8"
-keywords = ["fastcgi", "fcgi", "cgi", "http"]
+keywords = ["fastcgi", "fcgi", "cgi", "http", "rfc3875"]
 classifiers = [
 	"Programming Language :: Python :: 3",
 	"Programming Language :: Python :: 3.8",
@@ -31,5 +31,5 @@ Homepage = "https://github.com/USN484259/simple-fastcgi"
 
 [tool.setuptools]
 packages = [
-	"fastcgi",
+	"simple_fastcgi",
 ]

@@ -7,7 +7,7 @@ simple FastCGI protocol parser and sync/async handler in pure python
 
 ```python
 import json
-from fastcgi import *
+from simple_fastcgi import *
 
 class example_handler(HttpResponseMixin, FcgiHandler):
 	def handle(self):
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 ```python
 import json
 import asyncio
-from fastcgi import *
+from simple_fastcgi import *
 
 class example_handler(AsyncHttpResponseMixin, AsyncFcgiHandler):
 	async def handle(self):
@@ -41,6 +41,8 @@ if __name__ == "__main__":
 
 
 ## API reference
+
+The import module name is **simple_fastcgi**
 
 ### Exceptions
 
@@ -92,7 +94,6 @@ Write *data* to the output stream.
 Write *data* to the error stream.
 
 
----
 
 **class AsyncFcgiHandler**
 
@@ -207,6 +208,8 @@ Async variant of **HttpResponseMixin**. methods are the same, except being async
 async **send_response(code, /, mime_type = "text/plain", data = None, \*, extra_headers = [])**
 
 Note that if *data* is a function, it is assumed to be an **async generator** instead.
+
+async **send_redirect(target)**
 
 
 ## Reference
