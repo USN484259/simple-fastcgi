@@ -3,7 +3,7 @@
 simple FastCGI protocol parser and sync/async handler in pure python
 
 
-## Example (sync)
+## Example 1: echo (sync)
 
 ```python
 import json
@@ -19,20 +19,56 @@ if __name__ == "__main__":
 ```
 
 
-## Example (async)
-
+## Example 2: dir listing (async)
 
 ```python
+import os
 import json
 import asyncio
+from functools import partial
+from urllib.parse import parse_qs
 from simple_fastcgi import *
 
-class example_handler(AsyncHttpResponseMixin, AsyncFcgiHandler):
+
+async def dir_listing(path):
+	with os.scandir(path) as it:
+		for entry in it:
+			record = {
+				"name": entry.name
+			}
+			try:
+				if entry.is_dir():
+					record["type"] = "dir"
+				elif entry.is_file():
+					record["type"] = "file"
+				else:
+					continue
+
+				stat = entry.stat()
+				record["size"] = stat.st_size
+				record["mtime"] = int(stat.st_mtime * 1000)
+			except Exception:
+				pass
+
+			line = json.dumps(record, ensure_ascii = False) + '\n'
+			yield line
+
+
+class dir_listing_handler(AsyncHttpResponseMixin, AsyncFcgiHandler):
 	async def handle(self):
-		await self.send_response(200, "application/json", self.environ)
+		try:
+			doc_root = self.environ["DOCUMENT_ROOT"]
+			query = parse_qs(self.environ["QUERY_STRING"])
+			path = query["path"][0].lstrip("/.")
+
+			func = partial(dir_listing, os.path.join(doc_root, path))
+			return await self.send_response(200, "application/x-ndjson", data = func)
+		except Exception as e:
+			return await self.send_response(404)
+
 
 async def main():
-	async with AsyncFcgiServer(example_handler) as server:
+	async with AsyncFcgiServer(dir_listing_handler) as server:
 		await server.serve_forever()
 
 if __name__ == "__main__":
@@ -85,9 +121,9 @@ Returns 0 on EOF.
 
 Read input stream until EOF and return all the data.
 
-**write(data)**
+**write(data, \*, flush = False)**
 
-Write *data* to the output stream.
+Write *data* to the output stream. If *flush* is True, flush the data to underlying socket.
 
 **write_err(data)**
 
@@ -109,7 +145,7 @@ async **readinto(buffer)**
 
 async **readall()**
 
-async **write(data)**
+async **write(data, \*, flush = False)**
 
 async **write_err(data)**
 
@@ -172,7 +208,7 @@ async **serve_forever()**
 
 Helper mixin class for **FcgiServer**, to construct CGI/HTTP responses.
 
-**send_response(code, /, mime_type = "text/plain", data = None, \*, extra_headers = [])**
+**send_response(code, /, mime_type = "text/plain", data = None, \*, extra_headers = [], flush = True)**
 
 Construct a CGI document response and write to output stream.
 
@@ -187,6 +223,8 @@ Construct a CGI document response and write to output stream.
 - if *data* is a string, it is encoded in UTF-8.
 - if "json" appears in *mime_type* and *data* is not bytes-like, try to encode *data* as json.
 - else, append *data* to payload as-is.
+
+if *data* is a function and *flush* is True, each data chunk is followed by a flush.
 
 Note that you **can** mix this method with *write()* calls. For example, you can call this method,
 passing first data chunk as *data* parameter, followed by multiple *write()* calls to append more data.
@@ -205,7 +243,7 @@ Construct a CGI redirect response and write to output stream.
 
 Async variant of **HttpResponseMixin**. methods are the same, except being async
 
-async **send_response(code, /, mime_type = "text/plain", data = None, \*, extra_headers = [])**
+async **send_response(code, /, mime_type = "text/plain", data = None, \*, extra_headers = [], flush = True)**
 
 Note that if *data* is a function, it is assumed to be an **async generator** instead.
 

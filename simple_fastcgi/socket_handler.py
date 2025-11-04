@@ -56,8 +56,19 @@ class FcgiHandler(BaseRequestHandler, BufferedIOBase):
 
 		return self.protocol.readall()
 
-	def write(self, data):
+	def read(self, sz = -1):
+		if sz < 0:
+			return self.readall()
+		buffer = bytearray(sz)
+		size = self.readinto(buffer)
+		return buffer[:size]
+
+
+	def write(self, data, *, flush = False):
 		self.protocol.write(data)
+		if flush:
+			self.protocol.flush()
+
 		while True:
 			resp = self.protocol.fetch(0x1000)
 			if resp:

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 import struct
 from collections import deque, namedtuple
 
@@ -210,13 +209,13 @@ class fastcgi_protocol:
 		resp = record_pack(FCGI_GET_VALUES_RESULT, 0, resp_table)
 		self.output_queue.append(resp)
 
-	def default_management_hander(self, record):
+	def default_management_handler(self, record):
 		if record.type == FCGI_GET_VALUES:
 			return self.parse_get_values(record)
 
 	# public methods
 
-	def __init__(self, /, write_buffer_size = 0x1000, management_hander = None):
+	def __init__(self, /, write_buffer_size = 0x1000, management_handler = None):
 		self.request_id = None
 		self.role = None
 		self.keep_conn = None
@@ -224,7 +223,7 @@ class fastcgi_protocol:
 		self.eof = False
 		self.aborted = False
 		self.write_buffer_size = write_buffer_size
-		self.management_hander = management_hander or self.default_management_hander
+		self.management_handler = management_handler or self.default_management_handler
 		self.environ = {}
 		self.params = bytearray()
 		self.stdin = bytearray()
@@ -251,11 +250,10 @@ class fastcgi_protocol:
 				else:
 					break
 
-				print(record, file = sys.stderr)
 				parser = self.parser_table.get(record.type)
 				if not parser:
 					if record.request_id == 0:
-						resp = self.management_hander(record)
+						resp = self.management_handler(record)
 						if resp is None:
 							resp = record_pack(FCGI_UNKNOWN_TYPE, 0, record.type)
 

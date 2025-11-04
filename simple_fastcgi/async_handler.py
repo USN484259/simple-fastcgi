@@ -69,8 +69,11 @@ class AsyncFcgiHandler:
 		size = await self.readinto(buffer)
 		return buffer[:size]
 
-	async def write(self, data):
+	async def write(self, data, *, flush = False):
 		self.protocol.write(data)
+		if flush:
+			self.protocol.flush()
+
 		while True:
 			resp = self.protocol.fetch(0x1000)
 			if resp:

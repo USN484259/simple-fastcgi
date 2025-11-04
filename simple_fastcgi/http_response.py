@@ -24,7 +24,7 @@ def make_header(code, mime_type, extra_headers, has_data):
 		resp_name = str(code)
 
 	mime_ext = ""
-	if mime_type.startswith("text/"):
+	if mime_type.startswith("text/") and "charset" not in mime_type:
 		mime_ext = "; charset=utf-8"
 	resp_str = "Status: %s\r\nContent-type: %s%s\r\n" % (resp_name, mime_type, mime_ext)
 	buffer[:] = resp_str.encode()
@@ -41,14 +41,16 @@ def make_header(code, mime_type, extra_headers, has_data):
 
 
 class HttpResponseMixin:
-	def send_response(self, code, /, mime_type = "text/plain", data = None, *, extra_headers = []):
+	def send_response(self, code, /, mime_type = "text/plain", data = None, *, extra_headers = [], flush = True):
 		header = make_header(code, mime_type, extra_headers, (data is None))
 		self.write(header)
 
 		if data is not None:
 			if callable(data):
 				for chunk in data():
-					self.write(chunk)
+					if isinstance(chunk, str):
+						chunk = chunk.encode()
+					self.write(chunk, flush = flush)
 				return
 
 			if isinstance(data, str):
@@ -65,14 +67,16 @@ class HttpResponseMixin:
 
 
 class AsyncHttpResponseMixin:
-	async def send_response(self, code, /, mime_type = "text/plain", data = None, *, extra_headers = []):
+	async def send_response(self, code, /, mime_type = "text/plain", data = None, *, extra_headers = [], flush = True):
 		header = make_header(code, mime_type, extra_headers, (data is None))
 		await self.write(header)
 
 		if data is not None:
 			if callable(data):
 				async for chunk in data():
-					await self.write(chunk)
+					if isinstance(chunk, str):
+						chunk = chunk.encode()
+					await self.write(chunk, flush = flush)
 				return
 
 			if isinstance(data, str):
