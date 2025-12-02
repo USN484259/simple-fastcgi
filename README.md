@@ -99,6 +99,10 @@ To implement your own handler, subclass FcgiHandler and override the **handle()*
 Member *environ* is a *dictionary* containing key-value pairs from the webserver.
 The keys are converted to upper-case.
 
+**server**
+
+Member *server* refers to the server object that creates this handler.
+
 **handle()**
 
 Override this method and do all the work here to serve a request.
@@ -135,6 +139,10 @@ Write *data* to the error stream.
 
 Async variant of **FcgiHandler**. methods are the same, except being async.
 
+**environ**
+
+**server**
+
 async **handle()**
 
 **aborted()**
@@ -157,7 +165,7 @@ async **write_err(data)**
 Subclass of **BaseServer**, but instead listening on FCGI_LISTENSOCK_FILENO ( fd 0 ).
 Can be used with context manager.
 
-**__init__(handler, sockfd = sys.stdin.fileno())**
+**\_\_init\_\_(handler, sockfd = sys.stdin.fileno())**
 
 Initialize a server object. Subclass may override and do extra initialization.
 
@@ -189,7 +197,7 @@ Can be used with async context manager.
 
 Note there is no **service_actions()** in **AsyncFcgiServer**, since it runs on event loop instead of its own loop, and one can easily schedule tasks to event loop.
 
-**__init__(handler, sockfd = sys.stdin.fileno())**
+**\_\_init\_\_(handler, sockfd = sys.stdin.fileno())**
 
 **fileno()**
 

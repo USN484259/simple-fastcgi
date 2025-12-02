@@ -8,7 +8,8 @@ from .protocol import *
 
 
 class AsyncFcgiHandler:
-	def __init__(self, reader, writer):
+	def __init__(self, server, reader, writer):
+		self.server = server
 		self.reader = reader
 		self.writer = writer
 		self.protocol = fastcgi_protocol()
@@ -113,7 +114,7 @@ class AsyncFcgiServer:
 			self.server = None
 
 	async def on_request(self, reader, writer):
-		handler = self.handler_class(reader, writer)
+		handler = self.handler_class(self, reader, writer)
 		await handler.setup()
 		try:
 			await handler.handle()
