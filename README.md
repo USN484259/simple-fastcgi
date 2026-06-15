@@ -11,7 +11,7 @@ from simple_fastcgi import *
 
 class example_handler(HttpResponseMixin, FcgiHandler):
 	def handle(self):
-		self.send_response(200, "application/json", self.environ)
+		self.send_response(200, json = self.environ)
 
 if __name__ == "__main__":
 	with FcgiServer(example_handler) as server:
@@ -216,13 +216,13 @@ async **serve_forever()**
 
 Helper mixin class for **FcgiServer**, to construct CGI/HTTP responses.
 
-**send_response(code, /, mime_type = "text/plain", data = None, \*, extra_headers = [], flush = True)**
+**send_response(code, /, mime_type = None, data = None, \*, json = None, extra_headers = [], flush = True)**
 
 Construct a CGI document response and write to output stream.
 
 *code* is the HTTP status code of the response.
 
-*mime_type* is the content-type of the response.
+*mime_type* is the content-type of the response. Default to "text/plain", or "application/json" if *json* is not None.
 
 *extra_headers* is the extra HTTP header fields that should be included in the response header.
 
@@ -232,7 +232,13 @@ Construct a CGI document response and write to output stream.
 - if "json" appears in *mime_type* and *data* is not bytes-like, try to encode *data* as json.
 - else, append *data* to payload as-is.
 
-if *data* is a function and *flush* is True, each data chunk is followed by a flush.
+If *json* is not None, it is serialized using *json.dumps* and as payload of the response.
+
+If *data* is a function and *flush* is True, each data chunk is followed by a flush.
+
+If *data*, *json* and *mime_type* are all None, the payload would be the HTTP status code and description.
+
+*data* and *json* should not be specified at the same time.
 
 Note that you **can** mix this method with *write()* calls. For example, you can call this method,
 passing first data chunk as *data* parameter, followed by multiple *write()* calls to append more data.
@@ -251,7 +257,7 @@ Construct a CGI redirect response and write to output stream.
 
 Async variant of **HttpResponseMixin**. methods are the same, except being async
 
-async **send_response(code, /, mime_type = "text/plain", data = None, \*, extra_headers = [], flush = True)**
+async **send_response(code, /, mime_type = None, data = None, \*, json = None, extra_headers = [], flush = True)**
 
 Note that if *data* is a function, it is assumed to be an **async generator** instead.
 
