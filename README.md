@@ -125,14 +125,17 @@ Returns 0 on EOF.
 
 Read input stream until EOF and return all the data.
 
-**write(data, \*, flush = False)**
+**write(data)**
 
-Write *data* to the output stream. If *flush* is True, flush the data to underlying socket.
+Write *data* to the output stream.
 
 **write_err(data)**
 
 Write *data* to the error stream.
 
+**flush()**
+
+Flush the buffered data to underlying socket.
 
 
 **class AsyncFcgiHandler**
@@ -153,25 +156,29 @@ async **readinto(buffer)**
 
 async **readall()**
 
-async **write(data, \*, flush = False)**
+async **write(data)**
 
 async **write_err(data)**
 
+async **flush()**
 
 ### Servers
 
 **class FcgiServer**
 
-Subclass of **BaseServer**, but instead listening on FCGI_LISTENSOCK_FILENO ( fd 0 ).
+Subclass of **BaseServer**, but listening on passed in socket or FCGI_LISTENSOCK_FILENO ( fd 0 ).
 Can be used with context manager.
 
-**\_\_init\_\_(handler, sockfd = sys.stdin.fileno())**
+**\_\_init\_\_(handler, sock = None)**
 
 Initialize a server object. Subclass may override and do extra initialization.
 
 *handler* is the handler-class which is instantiated on each request.
 
-*sockfd* is a listening socket on which the server is running, defaults to fd 0 in conforming to FastCGI Specification.
+*sock* is a listening socket on which the server is running. *FcgiServer* does **not** take ownership
+of this socket and caller is responsible to close it.
+
+If *sock* is None, it uses stdin in conforming to FastCGI Specification.
 
 **fileno()**
 
@@ -197,7 +204,7 @@ Can be used with async context manager.
 
 Note there is no **service_actions()** in **AsyncFcgiServer**, since it runs on event loop instead of its own loop, and one can easily schedule tasks to event loop.
 
-**\_\_init\_\_(handler, sockfd = sys.stdin.fileno())**
+**\_\_init\_\_(handler, sock = None)**
 
 **fileno()**
 
@@ -216,7 +223,7 @@ async **serve_forever()**
 
 Helper mixin class for **FcgiServer**, to construct CGI/HTTP responses.
 
-**send_response(code, /, mime_type = None, data = None, \*, json = None, extra_headers = [], flush = True)**
+**send_response(code, /, mime_type = None, data = None, \*, json = None, extra_headers = [])**
 
 Construct a CGI document response and write to output stream.
 
@@ -234,7 +241,7 @@ Construct a CGI document response and write to output stream.
 
 If *json* is not None, it is serialized using *json.dumps* and as payload of the response.
 
-If *data* is a function and *flush* is True, each data chunk is followed by a flush.
+If *data* is a function, each data chunk is followed by a flush.
 
 If *data*, *json* and *mime_type* are all None, the payload would be the HTTP status code and description.
 
@@ -245,6 +252,9 @@ passing first data chunk as *data* parameter, followed by multiple *write()* cal
 
 Also note that this method does **not** calculate or append a *content-length* header for you.
 You need to handle *content-length* header yourself, either omit this header, or calculate in advance.
+
+If *data* is a function and raises **before yielding any data**, no response (including the header) is sent out.
+You can then call *send_response* again, possibly with different parameters.
 
 **send_redirect(target)**
 
@@ -257,7 +267,7 @@ Construct a CGI redirect response and write to output stream.
 
 Async variant of **HttpResponseMixin**. methods are the same, except being async
 
-async **send_response(code, /, mime_type = None, data = None, \*, json = None, extra_headers = [], flush = True)**
+async **send_response(code, /, mime_type = None, data = None, \*, json = None, extra_headers = [])**
 
 Note that if *data* is a function, it is assumed to be an **async generator** instead.
 

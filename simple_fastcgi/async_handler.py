@@ -23,17 +23,21 @@ class AsyncFcgiHandler:
 		self.rfile = self
 		self.wfile = self
 
+	async def _send_out(self):
+		while True:
+			resp = self.protocol.fetch(0x1000)
+			if not resp:
+				break
+			self.writer.write(resp)
+			await self.writer.drain()
+
+
 	async def handle(self):
 		pass
 
 	async def finish(self):
 			self.protocol.complete()
-			while True:
-				resp = self.protocol.fetch(0x1000)
-				if not resp:
-					break
-				self.writer.write(resp)
-				await self.writer.drain()
+			await self._send_out()
 			self.writer.write_eof()
 			await self.writer.drain()
 			self.writer.close()
@@ -70,38 +74,31 @@ class AsyncFcgiHandler:
 		size = await self.readinto(buffer)
 		return buffer[:size]
 
-	async def write(self, data, *, flush = False):
+	async def write(self, data):
 		self.protocol.write(data)
-		if flush:
-			self.protocol.flush()
-
-		while True:
-			resp = self.protocol.fetch(0x1000)
-			if resp:
-				self.writer.write(resp)
-				await self.writer.drain()
-			else:
-				break
+		await self._send_out()
 
 	async def write_err(self, data):
 		self.protocol.write_err(data)
-		while True:
-			resp = self.protocol.fetch(0x1000)
-			if resp:
-				self.writer.write(resp)
-				await self.writer.drain()
-			else:
-				break
+		await self._send_out()
+
+	async def flush(self):
+		self.protocol.flush()
+		await self._send_out()
 
 
 class AsyncFcgiServer:
-	def __init__(self, handler, sockfd = sys.stdin.fileno()):
+	def __init__(self, handler, sock = None):
 		self.handler_class = handler
-		self.sockfd = sockfd
 		self.server = None
+		if sock is None:
+			self.socket = socket.socket(fileno = sys.stdin.fileno())
+		else:
+			# borrowed socket object
+			self.socket = sock
 
 	def fileno(self):
-		return self.sockfd
+		return self.socket.fileno()
 
 	def get_loop(self):
 		return self.server.get_loop()
@@ -122,8 +119,7 @@ class AsyncFcgiServer:
 			await handler.finish()
 
 	async def __aenter__(self):
-		sock = socket.socket(fileno = self.sockfd)
-		self.server = await asyncio.start_server(self.on_request, sock = sock, start_serving = True)
+		self.server = await asyncio.start_server(self.on_request, sock = self.socket, start_serving = True)
 		return self
 
 	async def __aexit__(self, exc_type, exc_value, traceback):

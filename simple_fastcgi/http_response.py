@@ -107,14 +107,20 @@ def process_data(data, json):
 class HttpResponseMixin:
 	def send_response(self, code, /, mime_type = None, data = None, *, json = None, extra_headers = []):
 		header = make_header(code, mime_type, extra_headers, data, json)
-		self.write(header)
 
 		if callable(data):
 			for chunk in data():
+				if header is not None:
+					self.write(header)
+					header = None
 				if isinstance(chunk, str):
 					chunk = chunk.encode()
 				self.write(chunk)
+				self.flush()
+			if header is not None:
+				self.write(header)
 		else:
+			self.write(header)
 			self.write(process_data(data, json))
 
 	def send_redirect(self, target):
@@ -125,14 +131,20 @@ class HttpResponseMixin:
 class AsyncHttpResponseMixin:
 	async def send_response(self, code, /, mime_type = "text/plain", data = None, *, json = None, extra_headers = []):
 		header = make_header(code, mime_type, extra_headers, data, json)
-		await self.write(header)
 
 		if callable(data):
 			async for chunk in data():
+				if header is not None:
+					await self.write(header)
+					header = None
 				if isinstance(chunk, str):
 					chunk = chunk.encode()
 				await self.write(chunk)
+				await self.flush()
+			if header is not None:
+				await self.write(header)
 		else:
+			await self.write(header)
 			await self.write(process_data(data, json))
 
 	async def send_redirect(self, target):

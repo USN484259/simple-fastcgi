@@ -20,17 +20,19 @@ class FcgiHandler(BaseRequestHandler, BufferedIOBase):
 		self.rfile = self
 		self.wfile = self
 
+	def _send_out(self):
+		while True:
+			resp = self.protocol.fetch(0x1000)
+			if not resp:
+				break
+			self.request.send(resp)
+
 	def handle(self):
 		pass
 
 	def finish(self):
 		self.protocol.complete()
-		while True:
-			resp = self.protocol.fetch(0x1000)
-			if not resp:
-				break
-
-			self.request.send(resp)
+		self._send_out()
 
 	def readable(self):
 		return True
@@ -63,34 +65,28 @@ class FcgiHandler(BaseRequestHandler, BufferedIOBase):
 		size = self.readinto(buffer)
 		return buffer[:size]
 
-
-	def write(self, data, *, flush = False):
+	def write(self, data):
 		self.protocol.write(data)
-		if flush:
-			self.protocol.flush()
-
-		while True:
-			resp = self.protocol.fetch(0x1000)
-			if resp:
-				self.request.send(resp)
-			else:
-				break
+		self._send_out()
 
 	def write_err(self, data):
 		self.protocol.write_err(data)
-		while True:
-			resp = self.protocol.fetch(0x1000)
-			if resp:
-				self.request.send(resp)
-			else:
-				break
+		self._send_out()
+
+	def flush(self):
+		self.protocol.flush()
+		self._send_out()
 
 
 # duplicated TCPServer code, with already listening fd
 class FcgiServer(BaseServer):
-	def __init__(self, handler, sockfd = sys.stdin.fileno()):
+	def __init__(self, handler, sock = None):
 		super().__init__(None, handler)
-		self.socket = socket.socket(fileno = sockfd)
+		if sock is None:
+			self.socket = socket.socket(fileno = sys.stdin.fileno())
+		else:
+			# borrowed socket object
+			self.socket = sock
 
 	def server_close(self):
 		self.socket.close()
