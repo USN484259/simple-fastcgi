@@ -90,12 +90,9 @@ class AsyncFcgiHandler:
 class AsyncFcgiServer:
 	def __init__(self, handler, sock = None):
 		self.handler_class = handler
+		self.socket = sock or socket.socket(fileno = sys.stdin.fileno())
+		self.sockfd = self.socket.fileno()
 		self.server = None
-		if sock is None:
-			self.socket = socket.socket(fileno = sys.stdin.fileno())
-		else:
-			# borrowed socket object
-			self.socket = sock
 
 	def fileno(self):
 		return self.socket.fileno()
@@ -105,10 +102,16 @@ class AsyncFcgiServer:
 
 	async def shutdown(self):
 		if self.server is not None:
+			# close() should be called before close_clients() when closing
+			# the server to avoid races with new clients connecting.
 			self.server.close()
 			self.server.close_clients()
 			await self.server.wait_closed()
 			self.server = None
+
+		if self.socket is not None:
+			self.socket.close()
+			self.socket = None
 
 	async def on_request(self, reader, writer):
 		handler = self.handler_class(self, reader, writer)
@@ -120,6 +123,7 @@ class AsyncFcgiServer:
 
 	async def __aenter__(self):
 		self.server = await asyncio.start_server(self.on_request, sock = self.socket, start_serving = True)
+		self.socket = None
 		return self
 
 	async def __aexit__(self, exc_type, exc_value, traceback):

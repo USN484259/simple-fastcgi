@@ -175,14 +175,11 @@ Initialize a server object. Subclass may override and do extra initialization.
 
 *handler* is the handler-class which is instantiated on each request.
 
-*sock* is a listening socket on which the server is running. *FcgiServer* does **not** take ownership
-of this socket and caller is responsible to close it.
-
-If *sock* is None, it uses stdin in conforming to FastCGI Specification.
+*sock* is a listening socket on which the server is running. defaults to *sys.stdin* in conforming to FastCGI Specification.
 
 **fileno()**
 
-Get the underlying fd of the server object. Returns *sockfd*.
+Get the underlying fd of the server object.
 
 **shutdown()**
 

@@ -82,11 +82,7 @@ class FcgiHandler(BaseRequestHandler, BufferedIOBase):
 class FcgiServer(BaseServer):
 	def __init__(self, handler, sock = None):
 		super().__init__(None, handler)
-		if sock is None:
-			self.socket = socket.socket(fileno = sys.stdin.fileno())
-		else:
-			# borrowed socket object
-			self.socket = sock
+		self.socket = sock or socket.socket(fileno = sys.stdin.fileno())
 
 	def server_close(self):
 		self.socket.close()
