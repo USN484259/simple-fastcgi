@@ -100,13 +100,14 @@ class AsyncFcgiServer:
 	def get_loop(self):
 		return self.server.get_loop()
 
-	async def shutdown(self):
+	async def shutdown(self, /, wait = True):
 		if self.server is not None:
 			# close() should be called before close_clients() when closing
 			# the server to avoid races with new clients connecting.
 			self.server.close()
 			self.server.close_clients()
-			await self.server.wait_closed()
+			if wait:
+				await self.server.wait_closed()
 			self.server = None
 
 		if self.socket is not None:

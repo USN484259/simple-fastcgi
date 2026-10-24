@@ -181,13 +181,27 @@ Initialize a server object. Subclass may override and do extra initialization.
 
 Get the underlying fd of the server object.
 
-**shutdown()**
+**add_watch(fd, func)**
 
-Stop the server.
+Register *fd* to be monitored by serve_forever internal loop. *func(fd)* will be called when fd is readable. The callback must not raise.
 
-**serve_forever()**
+The *fd* could be a plain file descriptor or an object with *fileno()* method.
 
-Start the server and block until shutdown.
+This function should be called before serve_forever.
+
+**serve_forever(poll_interval = None)**
+
+Start the server, serve requests until shutdown.
+
+After processing each request or fd registered by add_watch(), poll timeout or being or signaled by wakeup(), service_actions() is called.
+
+**shutdown(/, wait = True)**
+
+Stop the serve_forever loop. If called inside service_actions() or add_watch() callbacks, must set *wait = False* or it would deadlock.
+
+**wakeup()**
+
+Wakeup the serve_forever internal loop, and run service_actions() immediately.
 
 **service_actions()**
 
@@ -199,7 +213,7 @@ Called in serve_forever loop. Subclass may override and do their own actions.
 Async variant of **FcgiServer**. methods are the same, except being async.
 Can be used with async context manager.
 
-Note there is no **service_actions()** in **AsyncFcgiServer**, since it runs on event loop instead of its own loop, and one can easily schedule tasks to event loop.
+Note there is no **service_actions()**, **add_watch()** or **wakeup()** in **AsyncFcgiServer**, since it runs on event loop instead of its own loop, and one can easily schedule tasks to event loop.
 
 **\_\_init\_\_(handler, sock = None)**
 
@@ -209,7 +223,7 @@ Note there is no **service_actions()** in **AsyncFcgiServer**, since it runs on 
 
 Get the event loop on which the server is running.
 
-async **shutdown()**
+async **shutdown(/, wait = True)**
 
 async **serve_forever()**
 
